@@ -4,7 +4,7 @@ namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use Illuminate\Support\Srt;
+use Illuminate\Support\Str;
 
 use App\Post;
 
@@ -56,8 +56,9 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function show(Post $post)
+    public function show($slug)
     {
+        $post = Post::where('slug', $slug)->first();
         return view('admin.posts.show', compact('post'));
     }
 
@@ -67,9 +68,9 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function edit($id)
+    public function edit(Post $post)
     {
-        // 
+        return view('admin.posts.edit', compact('post'));
     }
 
     /**
@@ -79,9 +80,33 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function update(Request $request, $id)
+    public function update(Request $request, Post $post)
     {
-        //
+        $data = $request->all();
+
+        // gestione dello slug
+        if($data['title'] != $post->title){
+
+            // creo il nuovo slug
+            $startingSlug = Str::slug($data['title'],'-');
+            
+            // variabile d'appoggio
+            $newSlug = $startingSlug;
+            $contatore = 0;
+
+            while(Post::where('slug', $newSlug)->first()){
+
+                $contatore++;
+                $newSlug = $startingSlug . '-' . $contatore;
+            }
+
+            $data['slug'] = $newSlug;
+        } 
+
+        $post->update($data);
+
+        return redirect()->route('admin.posts.index')->with('updated', 'Hai modificato con successo l\'elemento ' .$post->id);
+    
     }
 
     /**
@@ -90,8 +115,10 @@ class PostController extends Controller
      * @param  int  $id
      * @return \Illuminate\Http\Response
      */
-    public function destroy($id)
+    public function destroy(Post $post)
     {
-        //
+        $post->delete();
+
+        return redirect()->route('admin.posts.index')->with('deleted', 'Hai eliminato con successo l\'elemento ' .$post->id);
     }
 }
