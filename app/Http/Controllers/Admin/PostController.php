@@ -39,12 +39,30 @@ class PostController extends Controller
      */
     public function store(Request $request)
     {
+        // validation rules
+        $request->validate([
+            'title' => 'required|max:255',
+            'content' => 'required',
+        ]);
+
         $data = $request->all();
 
-        $newPost = new Post();
-        $newPost->slug = Str::slug($data['title'], '-');
-        $newPost->fill($data);
+        // gestione slug
+        $startingSlug = Str::slug($data['title'], '-');
+        $newSlug = $startingSlug;
+        $contatore = 0;
 
+        while(Post::where('slug', $newSlug)->first()){
+
+            $contatore++;
+            $newSlug = $startingSlug . '-' . $contatore;
+        }
+
+        $data['slug'] = $newSlug;
+
+        // creazione istanza, fill e save dei dati
+        $newPost = new Post();
+        $newPost->fill($data);
         $newPost->save();
 
         return redirect()->route('admin.posts.index');
@@ -82,13 +100,19 @@ class PostController extends Controller
      */
     public function update(Request $request, Post $post)
     {
+        // validation rules
+        $request->validate([
+            'title' => 'required|max:255',
+            'content' => 'required'
+        ]);
+
+        // recupero dati
         $data = $request->all();
 
-        // gestione dello slug
+        // creazione slug
+        $startingSlug = Str::slug($data['title'],'-');
+        
         if($data['title'] != $post->title){
-
-            // creo il nuovo slug
-            $startingSlug = Str::slug($data['title'],'-');
             
             // variabile d'appoggio
             $newSlug = $startingSlug;
